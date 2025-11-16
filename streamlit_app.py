@@ -23,6 +23,7 @@ with col2:
     max_runtime = st.number_input("Max Runtime (min)", min_value=0, value=180)
     language = st.text_input("Language (ISO code, e.g., 'en')", value="en")
     director_name = st.text_input("Director (optional)")
+    certification = st.text_input("Certification (optional, e.g., 'PG-13')")
 
 genre_ids = st.text_input("Genre IDs (comma-separated, optional, e.g., 28,12 for Action & Adventure)")
 genre_operator = st.selectbox("Genre Operator", ["AND", "OR"])
@@ -52,6 +53,7 @@ if movie_name:
             min_runtime=min_runtime,
             max_runtime=max_runtime,
             language=language,
+            certification=certification,
             person_id=person_id,
             genre_ids=genre_ids_list,
             genre_operator=genre_operator
