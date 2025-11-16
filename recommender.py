@@ -2,12 +2,12 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 def content_based_recommendations(movie_title, all_movies):
-    """Return up to 3 recommended movies based on overview similarity"""
+    """Recommend up to 3 movies based on overview similarity"""
     if not all_movies:
         return []
 
-    overviews = [m.get('overview', '') for m in all_movies]
     tfidf = TfidfVectorizer(stop_words='english')
+    overviews = [m.get('overview', '') for m in all_movies]
     tfidf_matrix = tfidf.fit_transform(overviews)
 
     indices = {m['title']: i for i, m in enumerate(all_movies)}
@@ -21,11 +21,15 @@ def content_based_recommendations(movie_title, all_movies):
     top_indices = [i for i, _ in sim_scores[1:4]]
     return [all_movies[i]['title'] for i in top_indices]
 
-# Placeholder functions (implement sentiment & hybrid logic similarly)
 def sentiment_based_recommendations(movie_title, all_movies):
-    """Dummy sentiment-based recommendations"""
-    return content_based_recommendations(movie_title, all_movies)
+    """Simplified sentiment-based recommendations"""
+    # For demonstration, reverse the content-based recommendations
+    cb = content_based_recommendations(movie_title, all_movies)
+    return list(reversed(cb)) if cb else []
 
 def hybrid_recommendations(movie_title, all_movies):
-    """Dummy hybrid recommendations"""
-    return content_based_recommendations(movie_title, all_movies)
+    """Combine content-based and sentiment-based recommendations"""
+    cb = content_based_recommendations(movie_title, all_movies)
+    sb = sentiment_based_recommendations(movie_title, all_movies)
+    combined = cb + [m for m in sb if m not in cb]
+    return combined[:3]
