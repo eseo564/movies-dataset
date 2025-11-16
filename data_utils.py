@@ -1,7 +1,7 @@
 # data_utils.py
 import requests
 
-API_KEY = "YOUR_TMDB_API_KEY"  # <-- replace with your actual TMDB API key
+API_KEY = "765f721b002191fdc6a324061701eed7"  # <-- replace with your actual TMDB API key
 BASE_URL = "https://api.themoviedb.org/3"
 
 def get_movie_details(title):
