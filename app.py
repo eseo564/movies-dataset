@@ -1,34 +1,49 @@
+# app.py
+
 import streamlit as st
 import pandas as pd
-from data_utils import preprocess_movies, compute_sentiment_scores
-from recommender import recommend_movies
+from recommender import content_based_recommend, sentiment_based_recommend, hybrid_recommend
 
-# Load dataset (or pre-fetch via API)
-@st.cache_data
-def load_movies():
-    df = pd.read_csv("movies_metadata.csv")  # Or fetch from API
-    df = compute_sentiment_scores(df)
-    tfidf_matrix = preprocess_movies(df)
-    return df, tfidf_matrix
+# =========================
+# Load Data
+# =========================
+movies_df = pd.read_csv('movies.csv')  # must include columns: 'title', 'overview', 'genres', 'avg_sentiment'
 
-st.set_page_config(page_title="Movie Recommender", page_icon=":clapper:", layout="wide")
-st.image("assets/logo.png", width=150)
-st.title("🎬 Hybrid Movie Recommender")
+st.set_page_config(page_title="Movie Recommender", layout="wide")
+st.title("🎬 Movie Recommender System")
 
-movie_df, tfidf_matrix = load_movies()
+# =========================
+# User Input
+# =========================
+movie_choice = st.selectbox("Select a movie:", movies_df['title'].sort_values())
 
-movie_choice = st.selectbox("Choose a movie:", movie_df['title'].tolist())
-num_recs = st.slider("Number of recommendations:", 5, 20, 10)
-
-if st.button("Recommend"):
-    recommendations = recommend_movies(movie_choice, movie_df, tfidf_matrix, top_n=num_recs)
-    
-    if recommendations.empty:
-        st.warning("No recommendations found!")
+if st.button("Get Recommendations"):
+    # Content-Based
+    st.subheader("✨ Content-Based Recommendations")
+    content_movies = content_based_recommend(movie_choice, movies_df)
+    if not content_movies.empty:
+        for idx, row in content_movies.iterrows():
+            st.markdown(f"**{row['title']}** ({row['genres']})\n\n{row['overview']}")
+            st.markdown("---")
     else:
-        for idx, row in recommendations.iterrows():
-            st.markdown(f"### {row['title']} ({row.get('year','N/A')})")
-            st.image(row['poster'], width=150) if row['poster'] else None
-            st.write(row['overview'])
-            st.write(f"**Genres:** {row.get('genres','N/A')}")
-            st.write("---")
+        st.write("No recommendations found.")
+    
+    # Sentiment-Based
+    st.subheader("😊 Sentiment-Based Recommendations")
+    sentiment_movies = sentiment_based_recommend(movie_choice, movies_df)
+    if not sentiment_movies.empty:
+        for idx, row in sentiment_movies.iterrows():
+            st.markdown(f"**{row['title']}** ({row['genres']})\n\n{row['overview']}")
+            st.markdown("---")
+    else:
+        st.write("No recommendations found.")
+    
+    # Hybrid
+    st.subheader("🔀 Hybrid Recommendations")
+    hybrid_movies = hybrid_recommend(movie_choice, movies_df)
+    if not hybrid_movies.empty:
+        for idx, row in hybrid_movies.iterrows():
+            st.markdown(f"**{row['title']}** ({row['genres']})\n\n{row['overview']}")
+            st.markdown("---")
+    else:
+        st.write("No recommendations found.")
