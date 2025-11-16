@@ -23,11 +23,14 @@ if movie_name:
         st.write(f"**Runtime:** {movie_details.get('runtime')} min")
         st.write(f"**Overview:** {movie_details.get('overview')}")
 
+        # Fetch a list of popular movies for recommendation input
+        all_movies = get_popular_movies()  # This should return a list of dicts with 'title' and 'overview'
+
         # --- Recommendations ---
         st.subheader("Recommendations")
-        
+
         # Content-based
-        cb_movies = content_based_recommendations(movie_name)[:3]
+        cb_movies = content_based_recommendations(movie_name, all_movies)
         if cb_movies:
             st.write("**Content-Based:**")
             for m in cb_movies:
@@ -36,7 +39,7 @@ if movie_name:
             st.write("No content-based recommendations found.")
 
         # Sentiment-based
-        sb_movies = sentiment_based_recommendations(movie_name)[:3]
+        sb_movies = sentiment_based_recommendations(movie_name, all_movies)
         if sb_movies:
             st.write("**Sentiment-Based:**")
             for m in sb_movies:
@@ -45,14 +48,13 @@ if movie_name:
             st.write("No sentiment-based recommendations found.")
 
         # Hybrid
-        hybrid_movies = hybrid_recommendations(movie_name)[:3]
+        hybrid_movies = hybrid_recommendations(movie_name, all_movies)
         if hybrid_movies:
             st.write("**Hybrid:**")
             for m in hybrid_movies:
                 st.write(f"- {m}")
         else:
             st.write("No hybrid recommendations found.")
-
     else:
         st.error("Movie not found. Please try another title.")
 else:
