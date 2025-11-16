@@ -1,9 +1,6 @@
-streamlit>=1.18
+streamlit
 pandas
 numpy
-requests
 scikit-learn
 nltk
-textblob
-altair
-matplotlib
+requests
