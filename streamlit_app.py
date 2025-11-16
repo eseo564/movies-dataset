@@ -1,17 +1,37 @@
-# streamlit_app.py
-
 import streamlit as st
-from data_utils import get_movie_details, get_popular_movies
+from data_utils import get_movie_details, get_filtered_movies, get_person_id
 from recommender import content_based_recommendations, sentiment_based_recommendations, hybrid_recommendations
 
 st.set_page_config(page_title="Movie Recommender", layout="wide")
 st.title("🎬 Movie Recommender")
 
-# --- Movie selection ---
+# --- Movie input ---
 movie_name = st.text_input("Enter a movie name:")
 
+# --- Filters ---
+st.subheader("Filters")
+col1, col2 = st.columns(2)
+
+with col1:
+    start_year = st.number_input("Start Year", min_value=1900, max_value=2030, value=2000)
+    end_year = st.number_input("End Year", min_value=1900, max_value=2030, value=2025)
+    min_rating = st.slider("Minimum Rating", 0.0, 10.0, 7.0)
+    min_votes = st.number_input("Minimum Votes", min_value=0, value=100)
+    
+with col2:
+    min_runtime = st.number_input("Min Runtime (min)", min_value=0, value=60)
+    max_runtime = st.number_input("Max Runtime (min)", min_value=0, value=180)
+    language = st.text_input("Language (ISO code, e.g., 'en')", value="en")
+    director_name = st.text_input("Director (optional)")
+
+genre_ids = st.text_input("Genre IDs (comma-separated, optional, e.g., 28,12 for Action & Adventure)")
+genre_operator = st.selectbox("Genre Operator", ["AND", "OR"])
+
+# Convert inputs
+person_id = get_person_id(director_name) if director_name else None
+genre_ids_list = [int(g.strip()) for g in genre_ids.split(",")] if genre_ids else None
+
 if movie_name:
-    # Fetch movie details from API
     movie_details = get_movie_details(movie_name)
     
     if movie_details:
@@ -23,38 +43,31 @@ if movie_name:
         st.write(f"**Runtime:** {movie_details.get('runtime')} min")
         st.write(f"**Overview:** {movie_details.get('overview')}")
 
-        # Fetch a list of popular movies for recommendation input
-        all_movies = get_popular_movies()  # This should return a list of dicts with 'title' and 'overview'
+        # --- Fetch filtered movies ---
+        all_movies = get_filtered_movies(
+            start_year=start_year,
+            end_year=end_year,
+            min_rating=min_rating,
+            min_votes=min_votes,
+            min_runtime=min_runtime,
+            max_runtime=max_runtime,
+            language=language,
+            person_id=person_id,
+            genre_ids=genre_ids_list,
+            genre_operator=genre_operator
+        )
 
-        # --- Recommendations ---
         st.subheader("Recommendations")
-
-        # Content-based
+        
         cb_movies = content_based_recommendations(movie_name, all_movies)
-        if cb_movies:
-            st.write("**Content-Based:**")
-            for m in cb_movies:
-                st.write(f"- {m}")
-        else:
-            st.write("No content-based recommendations found.")
+        st.write("**Content-Based:**", cb_movies if cb_movies else "No recommendations found.")
 
-        # Sentiment-based
         sb_movies = sentiment_based_recommendations(movie_name, all_movies)
-        if sb_movies:
-            st.write("**Sentiment-Based:**")
-            for m in sb_movies:
-                st.write(f"- {m}")
-        else:
-            st.write("No sentiment-based recommendations found.")
+        st.write("**Sentiment-Based:**", sb_movies if sb_movies else "No recommendations found.")
 
-        # Hybrid
         hybrid_movies = hybrid_recommendations(movie_name, all_movies)
-        if hybrid_movies:
-            st.write("**Hybrid:**")
-            for m in hybrid_movies:
-                st.write(f"- {m}")
-        else:
-            st.write("No hybrid recommendations found.")
+        st.write("**Hybrid:**", hybrid_movies if hybrid_movies else "No recommendations found.")
+        
     else:
         st.error("Movie not found. Please try another title.")
 else:
