@@ -15,12 +15,6 @@ def get_movie_details(title):
         return details
     return None
 
-def get_popular_movies():
-    """Fetch popular movies from TMDB"""
-    url = f"{BASE_URL}/movie/popular?api_key={API_KEY}&language=en-US&page=1"
-    response = requests.get(url).json()
-    return response.get('results', [])
-
 def get_person_id(name):
     """Search for a person by name to get their TMDB ID"""
     url = f"{BASE_URL}/search/person?api_key={API_KEY}&query={name}"
@@ -41,35 +35,51 @@ def get_filtered_movies(
     certification=None,
     person_id=None,
     genre_ids=None,
-    genre_operator="AND"
+    genre_operator="AND",
+    page_limit=5
 ):
-    """Fetch movies using multiple filters"""
-    url = f"{BASE_URL}/discover/movie?api_key={API_KEY}&language=en-US&page=1"
+    """
+    Fetch movies from TMDB with filters
+    """
+    all_movies = []
     
-    if start_year:
-        url += f"&primary_release_date.gte={start_year}-01-01"
-    if end_year:
-        url += f"&primary_release_date.lte={end_year}-12-31"
-    if min_rating:
-        url += f"&vote_average.gte={min_rating}"
-    if min_votes:
-        url += f"&vote_count.gte={min_votes}"
-    if min_runtime:
-        url += f"&with_runtime.gte={min_runtime}"
-    if max_runtime:
-        url += f"&with_runtime.lte={max_runtime}"
-    if language:
-        url += f"&with_original_language={language}"
-    if certification:
-        url += f"&certification_country=US&certification.lte={certification}"
-    if person_id:
-        url += f"&with_cast={person_id}"
-    if genre_ids:
-        if genre_operator.upper() == "OR":
-            genre_query = "|".join(map(str, genre_ids))
-        else:
-            genre_query = ",".join(map(str, genre_ids))
-        url += f"&with_genres={genre_query}"
-    
-    response = requests.get(url).json()
-    return response.get('results', [])
+    for page in range(1, page_limit + 1):
+        url = f"{BASE_URL}/discover/movie?api_key={API_KEY}&language=en-US&page={page}"
+        
+        if start_year:
+            url += f"&primary_release_date.gte={start_year}-01-01"
+        if end_year:
+            url += f"&primary_release_date.lte={end_year}-12-31"
+        if min_rating:
+            url += f"&vote_average.gte={min_rating}"
+        if min_votes:
+            url += f"&vote_count.gte={min_votes}"
+        if min_runtime:
+            url += f"&with_runtime.gte={min_runtime}"
+        if max_runtime:
+            url += f"&with_runtime.lte={max_runtime}"
+        if language:
+            url += f"&with_original_language={language}"
+        if certification:
+            url += f"&certification_country=US&certification.lte={certification}"
+        if person_id:
+            url += f"&with_cast={person_id}"
+        if genre_ids:
+            if genre_operator.upper() == "OR":
+                url += "&with_genres=" + "|".join(map(str, genre_ids))
+            else:
+                url += "&with_genres=" + ",".join(map(str, genre_ids))
+        
+        response = requests.get(url).json()
+        movies = response.get('results', [])
+        all_movies.extend(movies)
+        
+    # Keep only essential info
+    clean_movies = []
+    for m in all_movies:
+        clean_movies.append({
+            'title': m.get('title'),
+            'overview': m.get('overview', ''),
+            'id': m.get('id')
+        })
+    return clean_movies
