@@ -40,6 +40,12 @@ def explain_similarity(movie_title, recommended_movie, all_movies):
     if idx1 is None or idx2 is None:
         return "No explanation available"
     
+    genres1 = set(all_movies[idx1].get('genres', []))
+    genres2 = set(all_movies[idx2].get('genres', []))
+    common = genres1.intersection(genres2)
+    return f"Common genres (IDs): {', '.join(map(str, common))}" if common else "No common genres"
+
+    
     genres1 = set([g['name'] for g in all_movies[idx1].get('genres', [])])
     genres2 = set([g['name'] for g in all_movies[idx2].get('genres', [])])
     common = genres1.intersection(genres2)
