@@ -76,8 +76,3 @@ def get_filtered_movies(
         clean_movies.append({
             'title': m.get('title'),
             'overview': m.get('overview', ''),
-            'id': m.get('id'),
-            'genres': m.get('genre_ids', []),
-            'poster_path': m.get('poster_path')
-        })
-    return clean_movies
