@@ -160,22 +160,27 @@ if movie_name:
         # =========================
         # Data Visualization: Genre & Release Year
         # =========================
-        if all_movies:
-            df = pd.DataFrame(all_movies)
-            df['release_year'] = pd.to_datetime(df.get('release_date', pd.Series([None]*len(df))), errors='coerce').dt.year
-            df['genres_str'] = df['genres'].apply(lambda g: ",".join(map(str, g)) if g else "None")
+# Data Visualization: Genre & Release Year
+# =========================
+if all_movies:
+    df = pd.DataFrame(all_movies)
+    df['release_year'] = pd.to_datetime(df.get('release_date', pd.Series([None]*len(df))), errors='coerce').dt.year
+    df['genres_str'] = df['genres'].apply(lambda g: ",".join(map(str, g)) if g else "None")
 
-            st.subheader("📊 Filtered Movies Overview")
+    st.subheader("📊 Filtered Movies Overview")
 
-            # Genre Distribution
-            genre_chart = alt.Chart(df).mark_bar().encode(
-                x='genres_str:N',
-                y='count()',
-                tooltip=['genres_str', 'count()']
-            ).properties(title="Genre Distribution of Filtered Movies")
-            st.altair_chart(genre_chart, use_container_width=True)
+    # Genre Distribution
+    genre_chart = alt.Chart(df).mark_bar().encode(
+        x='genres_str:N',
+        y='count()',
+        tooltip=['genres_str', 'count()']
+    ).properties(title="Genre Distribution of Filtered Movies")
+    st.altair_chart(genre_chart, use_container_width=True)
 
-            # Release Year Distribution
-            year_chart = alt.Chart(df.dropna(subset=['release_year'])).mark_bar().encode(
-                x='release_year:O',
-                y='count()',
+    # Release Year Distribution
+    year_chart = alt.Chart(df.dropna(subset=['release_year'])).mark_bar().encode(
+        x=alt.X('release_year:O', title='Release Year'),
+        y=alt.Y('count()', title='Number of Movies'),
+        tooltip=[alt.Tooltip('release_year:O', title='Year'), alt.Tooltip('count()', title='Count')]
+    ).properties(title="Release Year Distribution of Filtered Movies")
+    st.altair_chart(year_chart, use_container_width=True)
