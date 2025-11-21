@@ -38,9 +38,6 @@ def get_filtered_movies(
     genre_operator="AND",
     page_limit=5
 ):
-    """
-    Fetch movies from TMDB with filters
-    """
     all_movies = []
     
     for page in range(1, page_limit + 1):
@@ -74,12 +71,13 @@ def get_filtered_movies(
         movies = response.get('results', [])
         all_movies.extend(movies)
         
-    # Keep only essential info
     clean_movies = []
     for m in all_movies:
         clean_movies.append({
             'title': m.get('title'),
             'overview': m.get('overview', ''),
-            'id': m.get('id')
+            'id': m.get('id'),
+            'genres': m.get('genre_ids', []),
+            'poster_path': m.get('poster_path')
         })
     return clean_movies
