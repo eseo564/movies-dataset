@@ -71,8 +71,14 @@ def get_filtered_movies(
         movies = response.get('results', [])
         all_movies.extend(movies)
         
-    clean_movies = []
+        clean_movies = []
     for m in all_movies:
         clean_movies.append({
             'title': m.get('title'),
             'overview': m.get('overview', ''),
+            'id': m.get('id'),
+            'genres': m.get('genre_ids', []),
+            'poster_path': m.get('poster_path'),
+            'release_date': m.get('release_date')
+        })
+    return clean_movies
