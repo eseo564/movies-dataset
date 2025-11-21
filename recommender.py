@@ -6,6 +6,11 @@ def content_based_recommendations(movie_title, all_movies):
     if not all_movies:
         return []
 
+    # Filter out movies without overview
+    all_movies = [m for m in all_movies if m.get('overview')]
+    if not all_movies:
+        return []
+
     tfidf = TfidfVectorizer(stop_words='english')
     overviews = [m.get('overview', '') for m in all_movies]
     tfidf_matrix = tfidf.fit_transform(overviews)
@@ -40,13 +45,7 @@ def explain_similarity(movie_title, recommended_movie, all_movies):
     if idx1 is None or idx2 is None:
         return "No explanation available"
     
-    genres1 = set(all_movies[idx1].get('genres', []))
-    genres2 = set(all_movies[idx2].get('genres', []))
+    genres1 = set(all_movies[idx1].get('genres') or [])
+    genres2 = set(all_movies[idx2].get('genres') or [])
     common = genres1.intersection(genres2)
     return f"Common genres (IDs): {', '.join(map(str, common))}" if common else "No common genres"
-
-    
-    genres1 = set([g['name'] for g in all_movies[idx1].get('genres', [])])
-    genres2 = set([g['name'] for g in all_movies[idx2].get('genres', [])])
-    common = genres1.intersection(genres2)
-    return f"Common genres: {', '.join(common)}" if common else "No common genres"
