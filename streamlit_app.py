@@ -81,6 +81,20 @@ if movie_name:
             genre_operator=genre_operator
         )
 
+        # Ensure input movie is in the list
+        input_movie_entry = {
+            'title': movie_details['title'],
+            'overview': movie_details.get('overview', ''),
+            'id': movie_details['id'],
+            'genres': [g['id'] for g in movie_details.get('genres', [])],
+            'poster_path': movie_details.get('poster_path')
+        }
+        if input_movie_entry['title'] not in [m['title'] for m in all_movies]:
+            all_movies.append(input_movie_entry)
+
+        # Remove movies with empty overview
+        all_movies = [m for m in all_movies if m.get('overview')]
+
         st.subheader("Recommendations")
 
         # --- Content-Based ---
