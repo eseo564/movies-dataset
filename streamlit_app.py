@@ -1,14 +1,18 @@
 import streamlit as st
 from data_utils import get_movie_details, get_filtered_movies, get_person_id
-from recommender import content_based_recommendations, sentiment_based_recommendations, hybrid_recommendations
+from recommender import content_based_recommendations, sentiment_based_recommendations, hybrid_recommendations, explain_similarity
 
 st.set_page_config(page_title="Movie Recommender", layout="wide")
 st.title("🎬 Movie Recommender")
 
-# --- Movie input ---
+# =========================
+# Movie input
+# =========================
 movie_name = st.text_input("Enter a movie name:")
 
-# --- Filters ---
+# =========================
+# Filters
+# =========================
 st.subheader("Filters")
 col1, col2 = st.columns(2)
 
@@ -17,7 +21,11 @@ with col1:
     end_year = st.number_input("End Year", min_value=1900, max_value=2030, value=2025)
     min_rating = st.slider("Minimum Rating", 0.0, 10.0, 7.0)
     min_votes = st.number_input("Minimum Votes", min_value=0, value=100)
-    
+    decade = st.selectbox("Decade", ["Any"] + [f"{i}s" for i in range(1950, 2030, 10)])
+    if decade != "Any":
+        start_year = int(decade[:4])
+        end_year = start_year + 9
+
 with col2:
     min_runtime = st.number_input("Min Runtime (min)", min_value=0, value=60)
     max_runtime = st.number_input("Max Runtime (min)", min_value=0, value=180)
@@ -25,16 +33,22 @@ with col2:
     director_name = st.text_input("Director (optional)")
     certification = st.text_input("Certification (optional, e.g., 'PG-13')")
 
-genre_ids = st.text_input("Genre IDs (comma-separated, optional, e.g., 28,12 for Action & Adventure)")
+genre_ids = st.text_input("Genre IDs (comma-separated, optional, e.g., 28,12)")
 genre_operator = st.selectbox("Genre Operator", ["AND", "OR"])
 
 # Convert inputs
 person_id = get_person_id(director_name) if director_name else None
 genre_ids_list = [int(g.strip()) for g in genre_ids.split(",")] if genre_ids else None
 
+# =========================
+# User Watchlist
+# =========================
+if 'watchlist' not in st.session_state:
+    st.session_state['watchlist'] = []
+
 if movie_name:
     movie_details = get_movie_details(movie_name)
-    
+
     if movie_details:
         st.subheader("Movie Details")
         st.write(f"**Title:** {movie_details.get('title')}")
@@ -43,8 +57,16 @@ if movie_name:
         st.write(f"**Cast:** {', '.join([c['name'] for c in movie_details.get('credits', {}).get('cast', [])[:5]])}")
         st.write(f"**Runtime:** {movie_details.get('runtime')} min")
         st.write(f"**Overview:** {movie_details.get('overview')}")
+        if movie_details.get('poster_path'):
+            st.image(f"https://image.tmdb.org/t/p/w200{movie_details['poster_path']}")
 
-        # --- Fetch filtered movies ---
+        if st.button("Add to Watchlist"):
+            st.session_state['watchlist'].append(movie_name)
+            st.success(f"'{movie_name}' added to watchlist!")
+
+        # =========================
+        # Fetch filtered movies
+        # =========================
         all_movies = get_filtered_movies(
             start_year=start_year,
             end_year=end_year,
@@ -60,16 +82,45 @@ if movie_name:
         )
 
         st.subheader("Recommendations")
-        
+
+        # --- Content-Based ---
         cb_movies = content_based_recommendations(movie_name, all_movies)
-        st.write("**Content-Based:**", cb_movies if cb_movies else "No recommendations found.")
+        if cb_movies:
+            st.write("**Content-Based Recommendations:**")
+            for m in cb_movies:
+                explanation = explain_similarity(movie_name, m, all_movies)
+                st.markdown(f"- **{m}** → {explanation}")
+        else:
+            st.write("No recommendations found.")
 
+        # --- Sentiment-Based ---
         sb_movies = sentiment_based_recommendations(movie_name, all_movies)
-        st.write("**Sentiment-Based:**", sb_movies if sb_movies else "No recommendations found.")
+        if sb_movies:
+            st.write("**Sentiment-Based Recommendations:**")
+            for m in sb_movies:
+                explanation = explain_similarity(movie_name, m, all_movies)
+                st.markdown(f"- **{m}** → {explanation}")
+        else:
+            st.write("No recommendations found.")
 
+        # --- Hybrid ---
         hybrid_movies = hybrid_recommendations(movie_name, all_movies)
-        st.write("**Hybrid:**", hybrid_movies if hybrid_movies else "No recommendations found.")
-        
+        if hybrid_movies:
+            st.write("**Hybrid Recommendations:**")
+            for m in hybrid_movies:
+                explanation = explain_similarity(movie_name, m, all_movies)
+                st.markdown(f"- **{m}** → {explanation}")
+        else:
+            st.write("No recommendations found.")
+
+        # =========================
+        # Watchlist Display
+        # =========================
+        if st.session_state['watchlist']:
+            st.subheader("🎟️ Your Watchlist")
+            for w in st.session_state['watchlist']:
+                st.write(f"- {w}")
+
     else:
         st.error("Movie not found. Please try another title.")
 else:
