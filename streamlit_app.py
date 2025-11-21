@@ -1,6 +1,13 @@
 import streamlit as st
+import pandas as pd
+import altair as alt
 from data_utils import get_movie_details, get_filtered_movies, get_person_id
-from recommender import content_based_recommendations, sentiment_based_recommendations, hybrid_recommendations, explain_similarity
+from recommender import (
+    content_based_recommendations,
+    sentiment_based_recommendations,
+    hybrid_recommendations,
+    explain_similarity
+)
 
 st.set_page_config(page_title="Movie Recommender", layout="wide")
 st.title("🎬 Movie Recommender")
@@ -87,7 +94,8 @@ if movie_name:
             'overview': movie_details.get('overview', ''),
             'id': movie_details['id'],
             'genres': [g['id'] for g in movie_details.get('genres', [])],
-            'poster_path': movie_details.get('poster_path')
+            'poster_path': movie_details.get('poster_path'),
+            'release_date': movie_details.get('release_date', '')
         }
         if input_movie_entry['title'] not in [m['title'] for m in all_movies]:
             all_movies.append(input_movie_entry)
@@ -95,9 +103,12 @@ if movie_name:
         # Remove movies with empty overview
         all_movies = [m for m in all_movies if m.get('overview')]
 
+        # =========================
+        # Recommendations
+        # =========================
         st.subheader("Recommendations")
 
-        # --- Content-Based ---
+        # Content-Based
         cb_movies = content_based_recommendations(movie_name, all_movies)
         if cb_movies:
             st.write("**Content-Based Recommendations:**")
@@ -107,7 +118,7 @@ if movie_name:
         else:
             st.write("No recommendations found.")
 
-        # --- Sentiment-Based ---
+        # Sentiment-Based
         sb_movies = sentiment_based_recommendations(movie_name, all_movies)
         if sb_movies:
             st.write("**Sentiment-Based Recommendations:**")
@@ -117,7 +128,7 @@ if movie_name:
         else:
             st.write("No recommendations found.")
 
-        # --- Hybrid ---
+        # Hybrid
         hybrid_movies = hybrid_recommendations(movie_name, all_movies)
         if hybrid_movies:
             st.write("**Hybrid Recommendations:**")
@@ -128,14 +139,43 @@ if movie_name:
             st.write("No recommendations found.")
 
         # =========================
-        # Watchlist Display
+        # Watchlist-Based Aggregated Recommendations
         # =========================
         if st.session_state['watchlist']:
             st.subheader("🎟️ Your Watchlist")
             for w in st.session_state['watchlist']:
                 st.write(f"- {w}")
 
-    else:
-        st.error("Movie not found. Please try another title.")
-else:
-    st.info("Please enter a movie name to get details and recommendations.")
+            st.subheader("🔁 Watchlist-Based Recommendations")
+            watchlist_recs = []
+            for w_movie in st.session_state['watchlist']:
+                recs = content_based_recommendations(w_movie, all_movies)
+                watchlist_recs.extend([r for r in recs if r not in watchlist_recs])
+            if watchlist_recs:
+                for r in watchlist_recs[:5]:
+                    st.write(f"- {r}")
+            else:
+                st.write("No watchlist-based recommendations available.")
+
+        # =========================
+        # Data Visualization: Genre & Release Year
+        # =========================
+        if all_movies:
+            df = pd.DataFrame(all_movies)
+            df['release_year'] = pd.to_datetime(df.get('release_date', pd.Series([None]*len(df))), errors='coerce').dt.year
+            df['genres_str'] = df['genres'].apply(lambda g: ",".join(map(str, g)) if g else "None")
+
+            st.subheader("📊 Filtered Movies Overview")
+
+            # Genre Distribution
+            genre_chart = alt.Chart(df).mark_bar().encode(
+                x='genres_str:N',
+                y='count()',
+                tooltip=['genres_str', 'count()']
+            ).properties(title="Genre Distribution of Filtered Movies")
+            st.altair_chart(genre_chart, use_container_width=True)
+
+            # Release Year Distribution
+            year_chart = alt.Chart(df.dropna(subset=['release_year'])).mark_bar().encode(
+                x='release_year:O',
+                y='count()',
